@@ -1,0 +1,43 @@
+var b = require('bonescript');
+var inputPin = 'P8_19';
+b.pinMode(inputPin, b.INPUT);
+b.attachInterrupt(inputPin, true, 'rising', interruptCallback);
+var lastEvent=null;
+var count=0;
+var bounce=0;
+setTimeout(detach, 30000);
+
+function interruptCallback(x) {
+ b.digitalRead(inputPin,debounce);
+
+}
+
+function debounce(result)
+{
+    if (result.value===0)
+    {
+        count--;
+        if(count<0)
+        {
+            count=0;
+        }
+    }
+    else
+    {
+        count++;
+        if(count>10)
+        {
+            console.log(new Date().getTime());
+        }
+        else
+        {
+            b.digitalRead(inputPin,debounce);
+        }
+    }
+    
+}
+
+function detach() {
+ console.log("detached interrupt");
+ b.detachInterrupt(inputPin);
+}

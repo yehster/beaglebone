@@ -1,0 +1,18 @@
+var b = require('bonescript');
+b.pinMode('P8_19', b.INPUT);
+b.digitalRead('P8_19', printStatus);
+var last=0;
+function printStatus(x) {
+    if(last!=x.value)
+    {
+        console.log('x.value = ' + x.value);
+        console.log('x.err = ' + x.err);
+        last=x.value;        
+    }
+}
+function poll()
+{
+    b.digitalRead('P8_19', printStatus);
+}
+var interval=setInterval(poll,5);
+setTimeout(function(){clearInterval(interval);console.log("Ended!");},30000);
