@@ -1,0 +1,44 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="/jquery-2.0.0.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="display.css" />        
+        <script>
+            function initialize()
+            {
+                setInterval(displayInfo,100);
+            }
+            function displayInfo()
+            {
+                $.get("/json",{},function(data)
+                {
+                    var item;
+                    for(item in data)
+                    {
+                        $("#"+item).text(data[item]);
+                    }
+                });
+            }
+            $(document).ready(initialize);
+            
+        </script>
+    </head>
+    <body>
+        <div>
+            <span class="label">Cadence</span>
+            <span class="numeric" id="cadence"></span>
+            <span class="label">Speed</span>
+            <span class="numeric" id="speed"></span>
+            <span class="label">Distance</span>
+            <span class="numeric" id="distance"></span>
+            <span class="label">Active</span>
+            <span class="numeric" id="active"></span>
+        </div>
+    </body>
+</html>

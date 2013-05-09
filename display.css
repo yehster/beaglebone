@@ -1,0 +1,19 @@
+/* 
+    Document   : display
+    Created on : May 8, 2013, 11:37:48 PM
+    Author     : yehster
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+root { 
+    display: block;
+}
+
+.numeric {
+    font-weight: bold;
+    display:block;
+    font-size: 3em;
+    width:5em;
+    text-align: center;
+}

@@ -1,16 +1,31 @@
 var b = require('bonescript');
-var fs = require('http');
+var http = require('http');
 var fs = require('fs');
 var cadencePin = 'P8_19';
 var speedPin = 'P8_13';
-var last_update=null;
-var last_signal=null;
+
+var userFilesPath="/var/cadence/data/";
 var clear="\033[2J\033[;H";
+var red="\x1B[31m";
+var blue="\x1B[34m";
+var yellow="\x1B[33m";
+var white="\x1B[37m";
+
+
+var bold="\x1B[1m";
+var normal="\x1B[2m";
 
 var counters=new Array();
 
-var cadence_counter=new counter(cadencePin,5);
-var speed_counter=new counter(speedPin,20);
+var user="Kevin";
+if(process.argv.length>=3)
+    {
+        user=process.argv[2];
+    }
+var cadence_counter=new counter(cadencePin,5,user);
+var speed_counter=new counter(speedPin,20,user);
+
+var json_info;
 
 //setTimeout(detach, 15000);
 
@@ -29,28 +44,87 @@ function interrupt_callback(data,pin)
 function fixed_string(str,width)
 {
 	var retval="";
-	for(idx=str.length;idx<width;idx++)
+	for(var idx=str.length;idx<width;idx++)
 	{
 		retval+=" ";
 	}
 	return retval+str.toString();
 }
+function display_info()
+{
+    this.speed=(speed_counter.rate()*60*2/1600).toFixed(1);
+    this.cadence=cadence_counter.rate();
+    this.distance=(speed_counter.counts*2/1600).toFixed(3);
+    this.active=cadence_counter.active_formatted();
+    return this;
+}
 function display()
 {
-	var displayString=clear+"\x1B[37m"+fixed_string(cadence_counter.rate(),3)
-		+" "+"\x1B[34m" + fixed_string((speed_counter.rate()*60*2/1600).toFixed(1),4)
-		+"\n"+"\x1B[33m" + fixed_string((speed_counter.counts*2/1600).toFixed(3),6)
-                +"\n" +"\x1B[31m"+ cadence_counter.active_formatted();
+    
+        json_info=new display_info();
+	var displayString=clear+fixed_string(json_info.cadence,3)
+		+" " + fixed_string(json_info.speed,4)
+		+"\n" + fixed_string(json_info.distance,6)
+                +"\n" +normal+ json_info.active;
+        
 	console.log(displayString);
 }
 setInterval(display,100);
-function counter(pin,max_samples)
+function dateString(date2)
 {
+    var date = new Date();
+    var retval="";
+    retval+=date.getFullYear().toString();
+    retval+="_";
+    if(date.getMonth()+1<10)
+    {
+        retval+="0";
+    }
+    retval+=(date.getMonth()+1).toString();
+    retval+="_";
+    if(date.getDate()<10)
+    {
+        retval+="0";
+    }
+    retval+=date.getDate().toString();
+    
+    return retval;
+}
+function counter(pin,max_samples,user)
+{
+    
+        this.user=user;
+        this.date = new Date();
+        this.dateString=dateString(this.date);
+        this.fileName=userFilesPath+user+"_"+this.dateString+"_"+pin;
+        this.save=function()
+        {
+            var data={
+                counts:this.counts,
+                elapsed_time:this.active_time()
+            };
+            var dataString;
+            dataString=JSON.stringify(data);
+            fs.writeFileSync(this.fileName,dataString);
+        };
+	this.counts=0;
+	this.elapsed_time=0;
+        try
+        {
+            var data=fs.readFileSync(this.fileName,"utf-8");
+            console.log(data);
+            var info=JSON.parse(data);
+            this.counts=info.counts;
+            this.elapsed_time=info.elapsed_time;
+        }
+        catch(err)
+        {
+            console.log("No file:"+this.fileName);
+        }
+        
 	this.pin=pin;
 	this.last_update=null;
-	this.counts=0;
 	this.bounce_time=100;
-	this.elapsed_time=0;
 	this.pause_length=5000;
 	this.samples=new Array();
 	this.sample_index=0;
@@ -180,8 +254,57 @@ function interruptCallback(x) {
 
 process.on('exit', function () {
   console.log('About to exit.');
+  cadence_counter.save();
+  speed_counter.save();
 });
 process.on('SIGINT', function() {
     console.log("\nGracefully shutting down from SIGINT (Ctrl+C)");
     process.exit();
 });
+
+process.on('uncaughtException', function(err) {
+  console.log('Caught exception: ' + err);
+  process.exit();
+});
+
+function display_json(response)
+{
+  response.writeHead(200, {"Content-Type": "application/json"});
+  response.write(JSON.stringify(json_info));
+  response.end();
+    
+}
+
+function display_file(response,filename,ct)
+{
+fs.readFile('/var/lib/cloud9/Cadence/'+filename, function (err, data) {
+  if (err) throw err;
+  response.writeHead(200, {"Content-Type": ct});
+  response.write(data);
+  response.end();
+});    
+    
+}
+http.createServer(function(request, response) {
+    if(request.url.indexOf("/json")===0)
+    {
+        display_json(response)
+    }
+    else
+    {
+        if(request.url.indexOf(".html")>0)
+        {
+            display_file(response,request.url,"text/html");        
+        }
+        else 
+        if(request.url.indexOf(".css")>0)
+        {
+            display_file(response,request.url,"text/css");        
+        }
+        if(request.url.indexOf(".js")>0)
+        {
+            display_file(response,request.url,"text/javascript");        
+        }
+        
+    }
+}).listen(8888);
