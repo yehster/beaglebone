@@ -52,8 +52,11 @@ function fixed_string(str,width)
 }
 function display_info()
 {
-    this.speed=(speed_counter.rate()*60*2/1600).toFixed(1);
-    this.cadence=cadence_counter.rate();
+    var now = new Date().getTime();
+    
+    
+    this.speed= (now-speed_counter.last_update) > speed_counter.pause_length ? 0 :(speed_counter.rate()*60*2/1600).toFixed(1);
+    this.cadence=(now-cadence_counter.last_update) > cadence_counter.pause_length ? 0 :cadence_counter.rate();
     this.distance=(speed_counter.counts*2/1600).toFixed(3);
     this.active=cadence_counter.active_formatted();
     return this;
@@ -149,7 +152,7 @@ function counter(pin,max_samples,user)
 		var secondsStr = (seconds < 10) ?  "0" +seconds.toString() : seconds.toString();
 		var minutesStr = (minutes<10) ? "0" + minutes.toString() : minutes.toString();
 		return hours.toString()+":"+minutesStr.toString()+":"+ secondsStr;
-	}
+	};
 	this.active_time=function()
 	{
 		var time=new Date().getTime();
@@ -164,13 +167,13 @@ function counter(pin,max_samples,user)
 			increment=(time)-this.startup;
 		}
 		return (increment)+this.elapsed_time;
-	}
+	};
 	this.addSample=function(time)
 	{
 		this.samples[this.sample_index]=time;
 		this.sample_index++;
 		this.sample_index=this.sample_index % this.max_samples;
-	}
+	};
 	b.pinMode(this.pin,b.INPUT);
 	b.attachInterrupt(this.pin,true,'rising'
 	,function(data)
@@ -305,6 +308,9 @@ http.createServer(function(request, response) {
         {
             display_file(response,request.url,"text/javascript");        
         }
-        
+        else
+        {
+            display_file(response,"display.html","text/html");        
+        }
     }
 }).listen(8888);
