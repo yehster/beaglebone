@@ -221,7 +221,7 @@ function counter(pin,max_samples,user)
 			this.last_update=time;
                         
 		}
-	}
+	};
 	counters[pin]=this;
 	return this;
 }
