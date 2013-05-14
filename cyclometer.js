@@ -61,6 +61,11 @@ function display_info()
     this.active=cadence_counter.active_formatted();
     return this;
 }
+
+var beep_period=50;
+var beep_slow_time=300;
+var beep_slow_period=600;
+var beep_count=0;
 function display()
 {
     
@@ -69,7 +74,22 @@ function display()
 		+" " + fixed_string(json_info.speed,4)
 		+"\n" + fixed_string(json_info.distance,6)
                 +"\n" +normal+ json_info.active;
-        
+        if(json_info.cadence===0)
+            {
+                displayString+="\n"+beep_count;
+                beep_count++;
+                if((beep_count%beep_period)===0)
+                    {
+                        if((beep_count<beep_slow_time) || ((beep_count%beep_slow_period)===0))
+                        {
+                            displayString+="\007";                        
+                        }
+                    }
+            }
+            else
+            {
+                beep_count=0;
+            }
 	console.log(displayString);
 }
 setInterval(display,100);
