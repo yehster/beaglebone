@@ -274,11 +274,16 @@ function interruptCallback(x) {
 }
 }
 }
+function save_data()
+{
+  cadence_counter.save();
+  speed_counter.save();
+}
+setInterval(save_data,60*15*100);
 
 process.on('exit', function () {
   console.log('About to exit.');
-  cadence_counter.save();
-  speed_counter.save();
+  save_data();
 });
 process.on('SIGINT', function() {
     console.log("\nGracefully shutting down from SIGINT (Ctrl+C)");
